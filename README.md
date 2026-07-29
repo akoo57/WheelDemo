@@ -78,3 +78,17 @@ The project separates gameplay data, presentation, and game-flow responsibilitie
 ## Android Build
 
 The installable Android APK is available from the repository's Releases section.
+
+## Screenshots
+
+### 16:9
+
+![16:9 Gameplay](Screenshots/WheelDemo_16x9.png)
+
+### 20:9
+
+![20:9 Gameplay](Screenshots/WheelDemo_20x9.png)
+
+### 4:3
+
+![4:3 Gameplay](Screenshots/WheelDemo_4x3.png)
