@@ -92,3 +92,7 @@ The installable Android APK is available from the repository's Releases section.
 ### 4:3
 
 ![4:3 Gameplay](Screenshots/WheelDemo_4x3.png)
+
+## Gameplay Video
+
+[Watch the gameplay video on Google Drive] https://drive.google.com/file/d/19BL6LrDqL3vmovxvPIwgZp-95XSOQtck/view?usp=sharing
