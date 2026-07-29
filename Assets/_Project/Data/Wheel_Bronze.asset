@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13be052f77a7148db86701c8307e77ba, type: 3}
+  m_Name: Wheel_Bronze
+  m_EditorClassIdentifier: 
+  wheelId: bronze
+  wheelBaseSprite: {fileID: 21300000, guid: 0d9291345965943da80730747b779d94, type: 3}
+  indicatorSprite: {fileID: 21300000, guid: 292257e4d2efa4a308ab6a7d2b1aed84, type: 3}
+  slices:
+  - reward: {fileID: 11400000, guid: 8812f48bfe32441619fc2bbb73810a80, type: 2}
+    amountMultiplier: 1
+  - reward: {fileID: 11400000, guid: 3868bcc21f007484b92a36245b6ac1da, type: 2}
+    amountMultiplier: 1
+  - reward: {fileID: 11400000, guid: 1c827402b8c8e4d08a3e7f562d854eb1, type: 2}
+    amountMultiplier: 1
+  - reward: {fileID: 11400000, guid: 8812f48bfe32441619fc2bbb73810a80, type: 2}
+    amountMultiplier: 1
+  - reward: {fileID: 11400000, guid: 9bf77baa92f2948f8836d7adbf7e0e0e, type: 2}
+    amountMultiplier: 1
+  - reward: {fileID: 11400000, guid: 8812f48bfe32441619fc2bbb73810a80, type: 2}
+    amountMultiplier: 1
+  - reward: {fileID: 11400000, guid: 5130071055be24b598729fb1cb55a827, type: 2}
+    amountMultiplier: 1
+  - reward: {fileID: 11400000, guid: 3868bcc21f007484b92a36245b6ac1da, type: 2}
+    amountMultiplier: 1
