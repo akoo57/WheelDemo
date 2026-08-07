@@ -1,458 +1,646 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using WheelDemo.Data;
+using WheelDemo.Rewards;
+using WheelDemo.UI;
+using WheelDemo.Wheel;
 
-public class GameFlowController : MonoBehaviour
+namespace WheelDemo.Core
 {
-    [Header("Testing")]
-    [SerializeField, Min(1)] private int startingZone = 1;
-
-    [Header("Wheel Data")]
-    [SerializeField] private WheelData bronzeWheel;
-    [SerializeField] private WheelData silverWheel;
-    [SerializeField] private WheelData goldenWheel;
-
-    [Header("Game References")]
-    [SerializeField] private WheelView wheelView;
-    [SerializeField] private WheelSpinController wheelSpinController;
-
-    [Header("UI References")]
-    [SerializeField] private TMP_Text zoneTitleText;
-    [SerializeField] private TMP_Text zoneValueText;
-    [SerializeField] private Button collectButton;
-    [SerializeField] private RewardPanelView rewardPanelView;
-    [SerializeField] private RunResultPopupView resultPopupView;
-    [SerializeField] private WheelResultView wheelResultView;
-
-    private int currentZone;
-    private bool isRunEnded;
-
-    private readonly RewardCollection rewardCollection =
-        new RewardCollection();
-
-    public int CurrentZone => currentZone;
-
-    private void OnEnable()
+    public class GameFlowController : MonoBehaviour, IRewardResolutionContext
     {
-        if (wheelSpinController != null)
-        {
-            wheelSpinController.SpinStarted +=
-                HandleSpinStarted;
+        [Header("Testing")]
+        [SerializeField, Min(1)] private int startingZone = 1;
+        [SerializeField, Min(0)] private int reviveCost = 50;
 
-            wheelSpinController.SpinCompleted +=
-                HandleSpinCompleted;
-        }
+        [Header("Wheel Data")]
+        [SerializeField] private WheelData bronzeWheel;
+        [SerializeField] private WheelData silverWheel;
+        [SerializeField] private WheelData goldenWheel;
 
-        if (collectButton != null)
+        [Header("Zone Configuration")]
+        [SerializeField] private ZoneConfiguration zoneConfiguration;
+
+        [Header("Game References")]
+        [SerializeField] private WheelView wheelView;
+        [SerializeField] private WheelSpinController wheelSpinController;
+
+        [Header("UI References")]
+        [SerializeField] private TMP_Text zoneTitleText;
+        [SerializeField] private TMP_Text zoneValueText;
+        [SerializeField] private Button collectButton;
+        [SerializeField] private CurrencyWallet currencyWallet;
+        [SerializeField] private RewardPanelView rewardPanelView;
+        [SerializeField] private RunResultPopupView resultPopupView;
+        [SerializeField] private WheelResultView wheelResultView;
+
+        private GameFlowStateMachine stateMachine;
+        private GameInteractionPolicy interactionPolicy;
+        private ZoneProgressionService zoneProgressionService;
+        private ZoneConfiguration runtimeZoneConfiguration;
+        private RunRewardService runRewardService;
+        private IPlayerRewardInventory playerRewardInventory;
+        private RewardSettlementService rewardSettlementService;
+        private ReviveService reviveService;
+        private RunFlowService runFlowService;
+        private CurrencyWallet runtimeCurrencyWallet;
+
+        public int CurrentZone => zoneProgressionService != null
+            ? zoneProgressionService.CurrentZone
+            : Mathf.Max(1, startingZone);
+
+        private void Awake()
         {
-            collectButton.onClick.AddListener(
-                HandleCollectRequested
+            ZoneConfiguration activeConfiguration = zoneConfiguration;
+
+            if (activeConfiguration == null)
+            {
+                runtimeZoneConfiguration =
+                    ZoneConfiguration.CreateRuntime(
+                        bronzeWheel,
+                        silverWheel,
+                        goldenWheel
+                    );
+
+                activeConfiguration = runtimeZoneConfiguration;
+            }
+
+            stateMachine = new GameFlowStateMachine(
+                GameFlowState.ReadyToSpin
+            );
+            interactionPolicy = new GameInteractionPolicy(stateMachine);
+            zoneProgressionService = new ZoneProgressionService(
+                activeConfiguration,
+                startingZone
+            );
+            runRewardService = new RunRewardService();
+            playerRewardInventory = new PlayerRewardInventory();
+
+            if (currencyWallet == null)
+            {
+                GameObject walletObject = new GameObject(
+                    "RuntimeCurrencyWallet"
+                );
+
+                walletObject.hideFlags = HideFlags.HideAndDontSave;
+                runtimeCurrencyWallet =
+                    walletObject.AddComponent<CurrencyWallet>();
+                currencyWallet = runtimeCurrencyWallet;
+            }
+
+            rewardSettlementService = new RewardSettlementService(
+                currencyWallet,
+                playerRewardInventory
+            );
+            reviveService = new ReviveService(
+                currencyWallet,
+                reviveCost
+            );
+            runFlowService = new RunFlowService(
+                stateMachine,
+                interactionPolicy,
+                zoneProgressionService,
+                rewardSettlementService,
+                runRewardService,
+                reviveService
             );
         }
 
-        if (resultPopupView != null)
+        private void OnEnable()
         {
-            resultPopupView.RestartRequested +=
-                HandleRestartRequested;
-        }
-    }
+            if (stateMachine != null)
+            {
+                stateMachine.StateChanged += HandleStateChanged;
+            }
 
-    private void OnDisable()
-    {
-        if (wheelSpinController != null)
-        {
-            wheelSpinController.SpinStarted -=
-                HandleSpinStarted;
+            if (wheelSpinController != null)
+            {
+                wheelSpinController.SpinStarted +=
+                    HandleSpinStarted;
 
-            wheelSpinController.SpinCompleted -=
-                HandleSpinCompleted;
-        }
+                wheelSpinController.SpinCompleted +=
+                    HandleSpinCompleted;
 
-        if (collectButton != null)
-        {
-            collectButton.onClick.RemoveListener(
-                HandleCollectRequested
-            );
-        }
+                wheelSpinController.SpinCancelled +=
+                    HandleSpinCancelled;
+            }
 
-        if (resultPopupView != null)
-        {
-            resultPopupView.RestartRequested -=
-                HandleRestartRequested;
-        }
-    }
+            if (collectButton != null)
+            {
+                collectButton.onClick.AddListener(
+                    HandleCollectRequested
+                );
+            }
 
-    private void Start()
-    {
-        currentZone = Mathf.Max(1, startingZone);
-        isRunEnded = false;
+            if (runRewardService != null)
+            {
+                runRewardService.RewardsChanged += RefreshRewardPanel;
+            }
 
-        if (resultPopupView != null)
-        {
-            resultPopupView.Hide();
+            if (resultPopupView != null)
+            {
+                resultPopupView.ReviveRequested +=
+                    HandleReviveRequested;
+                resultPopupView.RestartRequested +=
+                    HandleRestartRequested;
+            }
         }
 
-        if (wheelResultView != null)
+        private void OnDisable()
         {
-            wheelResultView.Hide();
+            if (stateMachine != null)
+            {
+                stateMachine.StateChanged -= HandleStateChanged;
+            }
+
+            if (wheelSpinController != null)
+            {
+                wheelSpinController.SpinStarted -=
+                    HandleSpinStarted;
+
+                wheelSpinController.SpinCompleted -=
+                    HandleSpinCompleted;
+
+                wheelSpinController.SpinCancelled -=
+                    HandleSpinCancelled;
+            }
+
+            if (collectButton != null)
+            {
+                collectButton.onClick.RemoveListener(
+                    HandleCollectRequested
+                );
+            }
+
+            if (runRewardService != null)
+            {
+                runRewardService.RewardsChanged -= RefreshRewardPanel;
+            }
+
+            if (resultPopupView != null)
+            {
+                resultPopupView.ReviveRequested -=
+                    HandleReviveRequested;
+                resultPopupView.RestartRequested -=
+                    HandleRestartRequested;
+            }
         }
 
-        if (wheelSpinController != null)
+        private void Start()
         {
-            wheelSpinController.SetInteractionEnabled(true);
+            HideTransientViews();
+
+            if (wheelSpinController != null)
+            {
+                wheelSpinController.SetInteractionEnabled(
+                    interactionPolicy != null && interactionPolicy.CanSpin
+                );
+            }
+
+            ApplyCurrentZone();
+            RefreshRewardPanel();
         }
 
-        ApplyCurrentZone();
-        RefreshRewardPanel();
-    }
+        private void OnDestroy()
+        {
+            if (runtimeZoneConfiguration != null)
+            {
+                Destroy(runtimeZoneConfiguration);
+                runtimeZoneConfiguration = null;
+            }
+
+            if (runtimeCurrencyWallet != null)
+            {
+                Destroy(runtimeCurrencyWallet.gameObject);
+                runtimeCurrencyWallet = null;
+            }
+        }
 
         private void HandleSpinStarted()
         {
-            if (collectButton != null)
+            if (interactionPolicy == null || !interactionPolicy.CanSpin)
             {
-                collectButton.interactable = false;
+                return;
             }
 
+            stateMachine.SetState(GameFlowState.Spinning);
+            HideWheelResult();
+        }
+
+        private void HandleSpinCompleted(
+            WheelSliceData selectedSlice
+        )
+        {
+            if (stateMachine == null ||
+                stateMachine.CurrentState != GameFlowState.Spinning)
+            {
+                return;
+            }
+
+            if (selectedSlice == null ||
+                selectedSlice.Reward == null)
+            {
+                Debug.LogWarning(
+                    "Selected wheel slice has no reward.",
+                    this
+                );
+
+                stateMachine.SetState(GameFlowState.ReadyToSpin);
+                ApplyCurrentZone();
+                return;
+            }
+
+            RewardData selectedReward = selectedSlice.Reward;
+
+            int rewardAmount =
+                selectedSlice.GetRewardAmount(CurrentZone);
+
+            selectedReward.Resolve(this, rewardAmount);
+        }
+
+        private void HandleSpinCancelled()
+        {
+            if (stateMachine != null &&
+                stateMachine.CurrentState == GameFlowState.Spinning)
+            {
+                stateMachine.SetState(GameFlowState.ReadyToSpin);
+                ApplyCurrentZone();
+            }
+        }
+
+        public void GrantReward(RewardData reward, int amount)
+        {
+            if (reward == null)
+            {
+                return;
+            }
+
+            bool rewardGranted =
+                runFlowService != null &&
+                runFlowService.GrantReward(
+                    reward,
+                    amount
+                );
+
+            if (!rewardGranted)
+            {
+                return;
+            }
+
+            if (wheelResultView != null)
+            {
+                wheelResultView.Show(
+                    reward,
+                    amount
+                );
+            }
+
+            Debug.Log(
+                $"Zone {CurrentZone} reward: " +
+                $"{reward.DisplayName} x{amount}"
+            );
+
+            ApplyCurrentZone();
+        }
+
+        public void TriggerBomb()
+        {
+            HandleBomb();
+        }
+
+        private void HandleCollectRequested()
+        {
+            if (resultPopupView == null)
+            {
+                Debug.LogWarning(
+                    "Result popup reference is missing.",
+                    this
+                );
+                return;
+            }
+
+            RunCollectionResult result =
+                runFlowService != null
+                    ? runFlowService.TryCollect()
+                    : RunCollectionResult.SettlementFailed;
+
+            switch (result)
+            {
+                case RunCollectionResult.Success:
+                    resultPopupView.ShowCollected(CurrentZone);
+                    Debug.Log(
+                        $"The player safely collected the rewards in Zone {CurrentZone}."
+                    );
+                    return;
+
+                case RunCollectionResult.InvalidState:
+                    Debug.LogWarning(
+                        "Rewards can only be collected while ready to spin.",
+                        this
+                    );
+                    return;
+
+                case RunCollectionResult.MissingZoneDefinition:
+                    Debug.LogWarning(
+                        "Current zone definition is missing.",
+                        this
+                    );
+                    return;
+
+                case RunCollectionResult.CollectionNotAllowed:
+                    Debug.LogWarning(
+                        "Rewards can only be collected in a Safe or Super Zone.",
+                        this
+                    );
+                    return;
+
+                default:
+                    Debug.LogWarning(
+                        "Run rewards could not be settled.",
+                        this
+                    );
+                    return;
+            }
+        }
+
+        private void HandleBomb()
+        {
+            RunBombResult result =
+                runFlowService != null
+                    ? runFlowService.TriggerBomb()
+                    : RunBombResult.InvalidState;
+
+            if (result != RunBombResult.Success)
+            {
+                return;
+            }
+
+            HideWheelResult();
+
+            if (resultPopupView != null)
+            {
+                resultPopupView.ShowBombDecision(
+                    CurrentZone,
+                    reviveCost,
+                    reviveService != null &&
+                    reviveService.IsAvailable
+                );
+            }
+
+            Debug.Log(
+                $"Bomb selected in Zone {CurrentZone}. " +
+                "Awaiting revive or restart decision."
+            );
+        }
+
+        private void HandleReviveRequested()
+        {
+            RunReviveResult result =
+                runFlowService != null
+                    ? runFlowService.TryRevive()
+                    : RunReviveResult.ServiceUnavailable;
+
+            switch (result)
+            {
+                case RunReviveResult.Success:
+                    HideTransientViews();
+                    ApplyCurrentZone();
+
+                    Debug.Log(
+                        $"Revive succeeded in Zone {CurrentZone} for {reviveCost} Gold."
+                    );
+                    return;
+
+                case RunReviveResult.InsufficientCurrency:
+                    if (resultPopupView != null)
+                    {
+                        resultPopupView.ShowInsufficientGold(
+                            CurrentZone,
+                            reviveCost,
+                            reviveService != null
+                                ? reviveService.CurrentBalance
+                                : 0
+                        );
+                    }
+
+                    Debug.LogWarning(
+                        "Not enough Gold to revive.",
+                        this
+                    );
+                    return;
+
+                case RunReviveResult.ServiceUnavailable:
+                    Debug.LogWarning(
+                        "Revive service is unavailable.",
+                        this
+                    );
+                    return;
+
+                default:
+                    return;
+            }
+        }
+
+        private void HandleRestartRequested()
+        {
+            if (stateMachine != null &&
+                stateMachine.CurrentState == GameFlowState.RunCollected)
+            {
+                HandleCollectedRestart();
+                return;
+            }
+
+            RunRestartResult result =
+                runFlowService != null
+                    ? runFlowService.TryRestart()
+                    : RunRestartResult.InvalidState;
+
+            if (result != RunRestartResult.Success)
+            {
+                return;
+            }
+
+            CompleteRestartPresentation(
+                "The run restarted from Zone 1."
+            );
+        }
+
+        private void HandleCollectedRestart()
+        {
+            RunRestartResult result =
+                runFlowService != null
+                    ? runFlowService.TryRestart()
+                    : RunRestartResult.InvalidState;
+
+            if (result != RunRestartResult.Success)
+            {
+                return;
+            }
+
+            CompleteRestartPresentation(
+                "The collected run restarted from Zone 1."
+            );
+        }
+
+        private void ApplyCurrentZone()
+        {
+            ZoneDefinition zoneDefinition;
+
+            if (zoneProgressionService == null ||
+                !zoneProgressionService.TryGetCurrentDefinition(
+                    out zoneDefinition
+                ))
+            {
+                Debug.LogWarning(
+                    "Current zone definition is missing.",
+                    this
+                );
+                return;
+            }
+
+            WheelData selectedWheel = zoneDefinition.WheelData;
+
+            if (selectedWheel != null &&
+                wheelView != null)
+            {
+                wheelView.SetWheelData(selectedWheel, CurrentZone);
+            }
+
+            UpdateZoneUI(zoneDefinition);
+        }
+
+        private void UpdateZoneUI(ZoneDefinition zoneDefinition)
+        {
+            if (zoneValueText != null)
+            {
+                zoneValueText.text =
+                    $"ZONE {CurrentZone}";
+            }
+
+            if (zoneTitleText != null)
+            {
+                switch (zoneDefinition.ZoneType)
+                {
+                    case ZoneType.Safe:
+                        zoneTitleText.text = "SAFE ZONE";
+                        break;
+
+                    case ZoneType.Super:
+                        zoneTitleText.text = "SUPER ZONE";
+                        break;
+
+                    default:
+                        zoneTitleText.text = "CURRENT ZONE";
+                        break;
+                }
+            }
+
+            RefreshCollectButton(zoneDefinition);
+        }
+
+        private void HandleStateChanged(
+            GameFlowState previousState,
+            GameFlowState currentState
+        )
+        {
+            if (wheelSpinController != null)
+            {
+                wheelSpinController.SetInteractionEnabled(
+                    interactionPolicy != null && interactionPolicy.CanSpin
+                );
+            }
+
+            ZoneDefinition zoneDefinition;
+
+            if (zoneProgressionService != null &&
+                zoneProgressionService.TryGetCurrentDefinition(
+                    out zoneDefinition
+                ))
+            {
+                RefreshCollectButton(zoneDefinition);
+            }
+
+            if (resultPopupView != null &&
+                currentState == GameFlowState.AwaitingBombDecision)
+            {
+                resultPopupView.SetReviveAvailability(
+                    reviveService != null &&
+                    reviveService.IsAvailable
+                );
+            }
+        }
+
+        private void RefreshRewardPanel()
+        {
+            if (rewardPanelView != null)
+            {
+                rewardPanelView.Refresh(
+                    runRewardService != null
+                        ? runRewardService.Entries
+                        : null
+                );
+            }
+        }
+
+        private void HideTransientViews()
+        {
+            HideResultPopup();
+            HideWheelResult();
+        }
+
+        private void HideResultPopup()
+        {
+            if (resultPopupView != null)
+            {
+                resultPopupView.Hide();
+            }
+        }
+
+        private void HideWheelResult()
+        {
             if (wheelResultView != null)
             {
                 wheelResultView.Hide();
             }
         }
 
-    private void HandleSpinCompleted(
-        WheelSliceData selectedSlice
-    )
-    {
-        if (isRunEnded)
+        private void RefreshCollectButton(
+            ZoneDefinition zoneDefinition
+        )
         {
-            return;
+            if (collectButton != null)
+            {
+                collectButton.interactable =
+                    interactionPolicy != null &&
+                    interactionPolicy.CanCollect(zoneDefinition);
+            }
         }
 
-        if (selectedSlice == null ||
-            selectedSlice.Reward == null)
+        private void CompleteRestartPresentation(
+            string logMessage
+        )
         {
-            Debug.LogWarning(
-                "Selected wheel slice has no reward.",
-                this
-            );
+            HideTransientViews();
+
+            if (wheelSpinController != null)
+            {
+                wheelSpinController.ResetWheelRotation();
+            }
 
             ApplyCurrentZone();
-            return;
+            Debug.Log(logMessage);
         }
-
-        RewardData selectedReward =
-            selectedSlice.Reward;
-
-        if (selectedReward.IsBomb)
-        {
-            HandleBomb();
-            return;
-        }
-
-        int rewardAmount =
-            selectedSlice.GetRewardAmount(currentZone);
-
-        rewardCollection.Add(
-            selectedReward,
-            rewardAmount
-        );
-
-        RefreshRewardPanel();
-
-        if (wheelResultView != null)
-        {
-            wheelResultView.Show(
-                selectedReward,
-                rewardAmount
-            );
-        }
-
-        Debug.Log(
-            $"Zone {currentZone} reward: " +
-            $"{selectedReward.DisplayName} x{rewardAmount}"
-        );
-
-        currentZone++;
-
-        ApplyCurrentZone();
-    }
-
-    private void HandleCollectRequested()
-    {
-        if (isRunEnded)
-        {
-            return;
-        }
-
-        if (wheelSpinController != null &&
-            wheelSpinController.IsSpinning)
-        {
-            return;
-        }
-
-        ZoneType zoneType =
-            ZoneService.GetZoneType(currentZone);
-
-        bool canCollect =
-            zoneType == ZoneType.Safe ||
-            zoneType == ZoneType.Super;
-
-        if (!canCollect)
-        {
-            Debug.LogWarning(
-                "Rewards can only be collected in a Safe or Super Zone.",
-                this
-            );
-
-            return;
-        }
-
-        if (resultPopupView == null)
-        {
-            Debug.LogWarning(
-                "Result popup reference is missing.",
-                this
-            );
-
-            return;
-        }
-
-        isRunEnded = true;
-
-        if (wheelSpinController != null)
-        {
-            wheelSpinController.SetInteractionEnabled(false);
-        }
-
-        if (collectButton != null)
-        {
-            collectButton.interactable = false;
-        }
-
-        resultPopupView.ShowCollected(currentZone);
-
-        Debug.Log(
-            $"The player safely collected the rewards in Zone {currentZone}."
-        );
-    }
-
-    private void HandleBomb()
-    {
-        isRunEnded = true;
-
-        if (wheelResultView != null)
-        {
-            wheelResultView.Hide();
-        }
-
-        rewardCollection.Clear();
-        RefreshRewardPanel();
-
-        if (wheelSpinController != null)
-        {
-            wheelSpinController.SetInteractionEnabled(false);
-        }
-
-        if (collectButton != null)
-        {
-            collectButton.interactable = false;
-        }
-
-        if (resultPopupView != null)
-        {
-            resultPopupView.ShowBomb(currentZone);
-        }
-
-        Debug.Log(
-            $"Bomb selected in Zone {currentZone}. " +
-            "All collected rewards were lost."
-        );
-    }
-
-    private void HandleRestartRequested()
-    {
-        currentZone = 1;
-        isRunEnded = false;
-
-        rewardCollection.Clear();
-        RefreshRewardPanel();
-
-        if (wheelResultView != null)
-        {
-            wheelResultView.Hide();
-        }
-
-        if (resultPopupView != null)
-        {
-            resultPopupView.Hide();
-        }
-
-        if (wheelSpinController != null)
-        {
-            wheelSpinController.ResetWheelRotation();
-            wheelSpinController.SetInteractionEnabled(true);
-        }
-
-        ApplyCurrentZone();
-
-        Debug.Log("The run restarted from Zone 1.");
-    }
-
-    private void ApplyCurrentZone()
-    {
-        ZoneType zoneType =
-            ZoneService.GetZoneType(currentZone);
-
-        WheelData selectedWheel =
-            GetWheelData(zoneType);
-
-        if (selectedWheel != null &&
-            wheelView != null)
-        {
-            wheelView.SetWheelData(selectedWheel);
-        }
-
-        UpdateZoneUI(zoneType);
-    }
-
-    private WheelData GetWheelData(
-        ZoneType zoneType
-    )
-    {
-        switch (zoneType)
-        {
-            case ZoneType.Safe:
-                return silverWheel;
-
-            case ZoneType.Super:
-                return goldenWheel;
-
-            default:
-                return bronzeWheel;
-        }
-    }
-
-    private void UpdateZoneUI(ZoneType zoneType)
-    {
-        if (zoneValueText != null)
-        {
-            zoneValueText.text =
-                $"ZONE {currentZone}";
-        }
-
-        if (zoneTitleText != null)
-        {
-            switch (zoneType)
-            {
-                case ZoneType.Safe:
-                    zoneTitleText.text = "SAFE ZONE";
-                    break;
-
-                case ZoneType.Super:
-                    zoneTitleText.text = "SUPER ZONE";
-                    break;
-
-                default:
-                    zoneTitleText.text = "CURRENT ZONE";
-                    break;
-            }
-        }
-
-        if (collectButton != null)
-        {
-            bool isSafeZone =
-                zoneType == ZoneType.Safe ||
-                zoneType == ZoneType.Super;
-
-            bool isWheelIdle =
-                wheelSpinController == null ||
-                !wheelSpinController.IsSpinning;
-
-            collectButton.interactable =
-                !isRunEnded &&
-                isSafeZone &&
-                isWheelIdle;
-        }
-    }
-
-    private void RefreshRewardPanel()
-    {
-        if (rewardPanelView != null)
-        {
-            rewardPanelView.Refresh(
-                rewardCollection.Entries
-            );
-        }
-    }
 
 #if UNITY_EDITOR
-    private void OnValidate()
-    {
-        if (wheelView == null)
+        private void OnValidate()
         {
-            wheelView =
-                FindObjectOfType<WheelView>();
-        }
-
-        if (wheelSpinController == null)
-        {
-            wheelSpinController =
-                FindObjectOfType<WheelSpinController>();
-        }
-
-        if (rewardPanelView == null)
-        {
-            rewardPanelView =
-                FindObjectOfType<RewardPanelView>();
-        }
-
-        if (resultPopupView == null)
-        {
-            resultPopupView =
-                FindObjectOfType<RunResultPopupView>(true);
-        }
-
-        if (zoneTitleText == null)
-        {
-            GameObject titleObject =
-                GameObject.Find("ui_text_zone_title");
-
-            if (titleObject != null)
+            if (currencyWallet == null)
             {
-                zoneTitleText =
-                    titleObject.GetComponent<TMP_Text>();
+                currencyWallet =
+                    GetComponent<CurrencyWallet>();
             }
         }
-
-        if (zoneValueText == null)
-        {
-            GameObject valueObject =
-                GameObject.Find("ui_text_zone_value");
-
-            if (valueObject != null)
-            {
-                zoneValueText =
-                    valueObject.GetComponent<TMP_Text>();
-            }
-        }
-
-        if (collectButton == null)
-        {
-            GameObject collectObject =
-                GameObject.Find("ui_button_collect");
-
-            if (collectObject != null)
-            {
-                collectButton =
-                    collectObject.GetComponent<Button>();
-            }
-        }
-
-        if (wheelResultView == null)
-        {
-            wheelResultView =
-                FindObjectOfType<WheelResultView>(true);
-        }
-    }
 #endif
+    }
 }

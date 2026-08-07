@@ -18,17 +18,25 @@ MonoBehaviour:
   slices:
   - reward: {fileID: 11400000, guid: 4c395abb2e31847a0869d2c9d659d325, type: 2}
     amountMultiplier: 2
+    progressionConfiguration: {fileID: 11400000, guid: 0fe840ba7a000474fa6e4e5426099513, type: 2}
   - reward: {fileID: 11400000, guid: 777718ffd07f7433e9578dd0fde8ccbe, type: 2}
     amountMultiplier: 2
+    progressionConfiguration: {fileID: 11400000, guid: 0fe840ba7a000474fa6e4e5426099513, type: 2}
   - reward: {fileID: 11400000, guid: 5130071055be24b598729fb1cb55a827, type: 2}
     amountMultiplier: 2
+    progressionConfiguration: {fileID: 11400000, guid: 0fe840ba7a000474fa6e4e5426099513, type: 2}
   - reward: {fileID: 11400000, guid: fab9b4359e4fc4ad5bfa89c568790c97, type: 2}
     amountMultiplier: 2
+    progressionConfiguration: {fileID: 11400000, guid: 0fe840ba7a000474fa6e4e5426099513, type: 2}
   - reward: {fileID: 11400000, guid: 8812f48bfe32441619fc2bbb73810a80, type: 2}
     amountMultiplier: 2
+    progressionConfiguration: {fileID: 11400000, guid: 0fe840ba7a000474fa6e4e5426099513, type: 2}
   - reward: {fileID: 11400000, guid: 5130071055be24b598729fb1cb55a827, type: 2}
     amountMultiplier: 1
+    progressionConfiguration: {fileID: 11400000, guid: 0fe840ba7a000474fa6e4e5426099513, type: 2}
   - reward: {fileID: 11400000, guid: 8812f48bfe32441619fc2bbb73810a80, type: 2}
     amountMultiplier: 2
+    progressionConfiguration: {fileID: 11400000, guid: 0fe840ba7a000474fa6e4e5426099513, type: 2}
   - reward: {fileID: 11400000, guid: 9bf77baa92f2948f8836d7adbf7e0e0e, type: 2}
     amountMultiplier: 2
+    progressionConfiguration: {fileID: 11400000, guid: 0fe840ba7a000474fa6e4e5426099513, type: 2}

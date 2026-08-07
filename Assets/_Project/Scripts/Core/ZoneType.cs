@@ -1,6 +1,9 @@
-public enum ZoneType
+namespace WheelDemo.Core
 {
-    Normal,
-    Safe,
-    Super
+    public enum ZoneType
+    {
+        Normal,
+        Safe,
+        Super
+    }
 }

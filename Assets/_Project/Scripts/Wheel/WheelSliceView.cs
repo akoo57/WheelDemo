@@ -1,52 +1,111 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using WheelDemo.Data;
+using WheelDemo.UI;
 
-public class WheelSliceView : MonoBehaviour
+namespace WheelDemo.Wheel
 {
-    [SerializeField] private Image rewardIconImage;
-
-    public WheelSliceData SliceData { get; private set; }
-
-    public void Setup(WheelSliceData sliceData)
+    public class WheelSliceView : MonoBehaviour
     {
-        SliceData = sliceData;
+        [SerializeField] private Image rewardIconImage;
+        [SerializeField] private TMP_Text rewardAmountText;
 
-        if (sliceData == null || sliceData.Reward == null)
+        private Quaternion uprightWorldRotation;
+
+        public WheelSliceData SliceData { get; private set; }
+
+        private void Awake()
         {
-            Clear();
-            return;
+            uprightWorldRotation = transform.rotation;
         }
 
-        RewardData reward = sliceData.Reward;
-
-        rewardIconImage.sprite = reward.Icon;
-        rewardIconImage.enabled = reward.Icon != null;
-
-        rewardIconImage.rectTransform.localScale =
-            Vector3.one * reward.IconScale;
-    }
-
-    public void Clear()
-    {
-        SliceData = null;
-
-        if (rewardIconImage == null)
+        public void Setup(WheelSliceData sliceData)
         {
-            return;
+            SetupIcon(sliceData);
+
+            if (rewardAmountText != null)
+            {
+                rewardAmountText.gameObject.SetActive(false);
+            }
         }
 
-        rewardIconImage.sprite = null;
-        rewardIconImage.enabled = false;
-        rewardIconImage.rectTransform.localScale = Vector3.one;
-    }
+        public void Setup(WheelSliceData sliceData, int zoneNumber)
+        {
+            SetupIcon(sliceData);
+
+            if (rewardAmountText == null)
+            {
+                return;
+            }
+
+            bool showsAmount =
+                sliceData != null &&
+                sliceData.Reward != null &&
+                sliceData.Reward.ProducesAmount;
+
+            rewardAmountText.gameObject.SetActive(showsAmount);
+
+            if (showsAmount)
+            {
+                RewardVisualUtility.SetAmount(
+                    rewardAmountText,
+                    sliceData.GetRewardAmount(zoneNumber)
+                );
+            }
+        }
+
+        private void LateUpdate()
+        {
+            transform.rotation = uprightWorldRotation;
+        }
+
+        private void SetupIcon(WheelSliceData sliceData)
+        {
+            SliceData = sliceData;
+
+            if (sliceData == null || sliceData.Reward == null)
+            {
+                Clear();
+                return;
+            }
+
+            RewardData reward = sliceData.Reward;
+
+            RewardVisualUtility.ApplyIcon(rewardIconImage, reward);
+        }
+
+        public void Clear()
+        {
+            SliceData = null;
+
+            if (rewardIconImage == null)
+            {
+                return;
+            }
+
+            RewardVisualUtility.ApplyIcon(rewardIconImage, null);
+
+            if (rewardAmountText != null)
+            {
+                RewardVisualUtility.SetAmount(rewardAmountText, 0);
+                rewardAmountText.gameObject.SetActive(false);
+            }
+        }
 
 #if UNITY_EDITOR
-    private void OnValidate()
-    {
-        if (rewardIconImage == null)
+        private void OnValidate()
         {
-            rewardIconImage = GetComponentInChildren<Image>(true);
+            if (rewardIconImage == null)
+            {
+                rewardIconImage = GetComponentInChildren<Image>(true);
+            }
+
+            if (rewardAmountText == null)
+            {
+                rewardAmountText = GetComponentInChildren<TMP_Text>(true);
+            }
         }
-    }
 #endif
+    }
 }

@@ -1,29 +1,45 @@
 using System;
 using UnityEngine;
 
-[Serializable]
-public class WheelSliceData
+namespace WheelDemo.Data
 {
-    [SerializeField] private RewardData reward;
-    [SerializeField, Min(1)] private int amountMultiplier = 1;
-
-    public RewardData Reward => reward;
-    public int AmountMultiplier => amountMultiplier;
-
-    public int GetRewardAmount(int zoneNumber)
+    [Serializable]
+    public class WheelSliceData
     {
-        if (reward == null || reward.IsBomb)
+        [SerializeField] private RewardData reward;
+        [SerializeField, Min(1)] private int amountMultiplier = 1;
+        [SerializeField]
+        private RewardProgressionConfiguration progressionConfiguration;
+
+        public RewardData Reward => reward;
+        public int AmountMultiplier => amountMultiplier;
+        public RewardProgressionConfiguration ProgressionConfiguration =>
+            progressionConfiguration;
+
+        public int GetRewardAmount(int zoneNumber)
         {
-            return 0;
+            if (reward == null || !reward.ProducesAmount)
+            {
+                return 0;
+            }
+
+            int safeZoneNumber = Mathf.Max(1, zoneNumber);
+
+            if (progressionConfiguration != null)
+            {
+                return progressionConfiguration.CalculateAmount(
+                    reward.BaseAmount,
+                    amountMultiplier,
+                    safeZoneNumber
+                );
+            }
+
+            int progressionMultiplier =
+                1 + (safeZoneNumber - 1) / 5;
+
+            return reward.BaseAmount *
+                amountMultiplier *
+                progressionMultiplier;
         }
-
-        int safeZoneNumber = Mathf.Max(1, zoneNumber);
-
-        int progressionMultiplier =
-            1 + (safeZoneNumber - 1) / 5;
-
-        return reward.BaseAmount *
-            amountMultiplier *
-            progressionMultiplier;
     }
 }
