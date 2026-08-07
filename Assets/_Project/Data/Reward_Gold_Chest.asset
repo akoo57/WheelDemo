@@ -18,3 +18,4 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 2ebbdd53a0989453baaa413d675bc3f7, type: 3}
   iconScale: 0.9
   baseAmount: 1
+  behavior: {fileID: 11400000, guid: fa01493cc2db44e7191fa08f72c86fdb, type: 2}

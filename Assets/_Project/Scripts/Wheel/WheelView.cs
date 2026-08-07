@@ -1,150 +1,191 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using WheelDemo.Data;
 
-public class WheelView : MonoBehaviour
+namespace WheelDemo.Wheel
 {
-    [Header("Data")]
-    [SerializeField] private WheelData wheelData;
-
-    [Header("Main Visuals")]
-    [SerializeField] private Image wheelBaseImage;
-    [SerializeField] private Image indicatorImage;
-
-    [Header("Slices")]
-    [SerializeField] private WheelSliceView[] sliceViews;
-
-    public WheelData CurrentWheelData => wheelData;
-
-    public void SetWheelData(WheelData newWheelData)
+    public class WheelView : MonoBehaviour
     {
-        if (newWheelData == null)
+        [Header("Data")]
+        [SerializeField] private WheelData wheelData;
+
+        [Header("Main Visuals")]
+        [SerializeField] private Image wheelBaseImage;
+        [SerializeField] private Image indicatorImage;
+
+        [Header("Slices")]
+        [SerializeField] private WheelSliceView[] sliceViews;
+
+        public WheelData CurrentWheelData => wheelData;
+
+        public void SetWheelData(
+            WheelData newWheelData,
+            int zoneNumber
+        )
         {
-            Debug.LogWarning("New wheel data is null.", this);
-            return;
-        }
-
-        wheelData = newWheelData;
-        RefreshWheel();
-    }
-
-    private void Awake()
-    {
-        RefreshWheel();
-    }
-
-    [ContextMenu("Refresh Wheel")]
-    public void RefreshWheel()
-    {
-        if (wheelData == null)
-        {
-            return;
-        }
-
-        ApplyMainVisuals();
-        ApplySlices();
-    }
-
-    private void ApplyMainVisuals()
-    {
-        if (wheelBaseImage != null)
-        {
-            wheelBaseImage.sprite = wheelData.WheelBaseSprite;
-            wheelBaseImage.enabled = wheelData.WheelBaseSprite != null;
-        }
-
-        if (indicatorImage != null)
-        {
-            indicatorImage.sprite = wheelData.IndicatorSprite;
-            indicatorImage.enabled = wheelData.IndicatorSprite != null;
-        }
-    }
-
-    private void ApplySlices()
-    {
-        if (sliceViews == null)
-        {
-            return;
-        }
-
-        int dataCount = wheelData.Slices.Count;
-
-        for (int i = 0; i < sliceViews.Length; i++)
-        {
-            WheelSliceView sliceView = sliceViews[i];
-
-            if (sliceView == null)
+            if (newWheelData == null)
             {
-                continue;
+                Debug.LogWarning("New wheel data is null.", this);
+                return;
             }
 
-            bool hasSliceData = i < dataCount;
-            sliceView.gameObject.SetActive(hasSliceData);
-
-            if (hasSliceData)
-            {
-                sliceView.Setup(wheelData.Slices[i]);
-            }
+            wheelData = newWheelData;
+            RefreshWheel(zoneNumber);
         }
 
-        if (dataCount != sliceViews.Length)
-        {
-            Debug.LogWarning(
-                $"Wheel data contains {dataCount} slices, " +
-                $"but the scene contains {sliceViews.Length} slice views.",
-                this
-            );
-        }
-    }
-
-#if UNITY_EDITOR
-    private void OnValidate()
-    {
-        FindReferences();
-
-        if (!Application.isPlaying)
+        private void Awake()
         {
             RefreshWheel();
         }
-    }
 
-    private void FindReferences()
-    {
-        if (wheelBaseImage == null)
+        [ContextMenu("Refresh Wheel")]
+        public void RefreshWheel()
         {
-            Transform wheelBaseTransform =
-                transform.Find("ui_animator_wheel/ui_image_wheel_base");
-
-            if (wheelBaseTransform != null)
+            if (wheelData == null)
             {
-                wheelBaseImage =
-                    wheelBaseTransform.GetComponent<Image>();
+                return;
+            }
+
+            ApplyMainVisuals();
+            ApplySlices();
+        }
+
+        public void RefreshWheel(int zoneNumber)
+        {
+            if (wheelData == null)
+            {
+                return;
+            }
+
+            ApplyMainVisuals();
+            ApplySlices(zoneNumber);
+        }
+
+        private void ApplyMainVisuals()
+        {
+            if (wheelBaseImage != null)
+            {
+                wheelBaseImage.sprite = wheelData.WheelBaseSprite;
+                wheelBaseImage.enabled = wheelData.WheelBaseSprite != null;
+            }
+
+            if (indicatorImage != null)
+            {
+                indicatorImage.sprite = wheelData.IndicatorSprite;
+                indicatorImage.enabled = wheelData.IndicatorSprite != null;
             }
         }
 
-        if (indicatorImage == null)
+        private void ApplySlices()
         {
-            Transform indicatorTransform =
-                transform.Find("ui_image_wheel_indicator");
+            ApplySlicesInternal(false, 0);
+        }
 
-            if (indicatorTransform != null)
+        private void ApplySlices(int zoneNumber)
+        {
+            ApplySlicesInternal(true, zoneNumber);
+        }
+
+        private void ApplySlicesInternal(
+            bool showAmounts,
+            int zoneNumber
+        )
+        {
+            if (sliceViews == null)
             {
-                indicatorImage =
-                    indicatorTransform.GetComponent<Image>();
+                return;
+            }
+
+            int dataCount = wheelData.Slices.Count;
+
+            for (int i = 0; i < sliceViews.Length; i++)
+            {
+                WheelSliceView sliceView = sliceViews[i];
+
+                if (sliceView == null)
+                {
+                    continue;
+                }
+
+                bool hasSliceData = i < dataCount;
+                sliceView.gameObject.SetActive(hasSliceData);
+
+                if (hasSliceData)
+                {
+                    if (showAmounts)
+                    {
+                        sliceView.Setup(
+                            wheelData.Slices[i],
+                            zoneNumber
+                        );
+                    }
+                    else
+                    {
+                        sliceView.Setup(wheelData.Slices[i]);
+                    }
+                }
+            }
+
+            if (dataCount != sliceViews.Length)
+            {
+                Debug.LogWarning(
+                    $"Wheel data contains {dataCount} slices, " +
+                    $"but the scene contains {sliceViews.Length} slice views.",
+                    this
+                );
             }
         }
 
-        if (sliceViews == null || sliceViews.Length == 0)
+#if UNITY_EDITOR
+        private void OnValidate()
         {
-            sliceViews =
-                GetComponentsInChildren<WheelSliceView>(true);
+            FindReferences();
 
-            Array.Sort(
-                sliceViews,
-                (first, second) =>
-                    string.CompareOrdinal(first.name, second.name)
-            );
+            if (!Application.isPlaying)
+            {
+                RefreshWheel();
+            }
         }
-    }
+
+        private void FindReferences()
+        {
+            if (wheelBaseImage == null)
+            {
+                Transform wheelBaseTransform =
+                    transform.Find("ui_animator_wheel/ui_image_wheel_base");
+
+                if (wheelBaseTransform != null)
+                {
+                    wheelBaseImage =
+                        wheelBaseTransform.GetComponent<Image>();
+                }
+            }
+
+            if (indicatorImage == null)
+            {
+                Transform indicatorTransform =
+                    transform.Find("ui_image_wheel_indicator");
+
+                if (indicatorTransform != null)
+                {
+                    indicatorImage =
+                        indicatorTransform.GetComponent<Image>();
+                }
+            }
+
+            if (sliceViews == null || sliceViews.Length == 0)
+            {
+                sliceViews =
+                    GetComponentsInChildren<WheelSliceView>(true);
+
+                Array.Sort(
+                    sliceViews,
+                    (first, second) =>
+                        string.CompareOrdinal(first.name, second.name)
+                );
+            }
+        }
 #endif
+    }
 }

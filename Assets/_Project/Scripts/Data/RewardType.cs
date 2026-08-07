@@ -1,9 +1,12 @@
-public enum RewardType
+namespace WheelDemo.Data
 {
-    Cash,
-    Gold,
-    Chest,
-    Weapon,
-    Consumable,
-    Bomb
+    public enum RewardType
+    {
+        Cash,
+        Gold,
+        Chest,
+        Weapon,
+        Consumable,
+        Bomb
+    }
 }
