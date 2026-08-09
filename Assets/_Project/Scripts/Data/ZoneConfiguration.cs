@@ -19,16 +19,6 @@ namespace WheelDemo.Data
         {
         }
 
-        public ZoneDefinition(
-            ZoneType zoneType,
-            WheelData wheelData,
-            bool allowsCollection
-        )
-        {
-            this.zoneType = zoneType;
-            this.wheelData = wheelData;
-            this.allowsCollection = allowsCollection;
-        }
     }
 
     [CreateAssetMenu(
@@ -53,35 +43,6 @@ namespace WheelDemo.Data
 
         public int SafeZoneInterval => safeZoneInterval;
         public int SuperZoneInterval => superZoneInterval;
-
-        public static ZoneConfiguration CreateRuntime(
-            WheelData normalWheel,
-            WheelData safeWheel,
-            WheelData superWheel
-        )
-        {
-            ZoneConfiguration configuration =
-                CreateInstance<ZoneConfiguration>();
-
-            configuration.hideFlags = HideFlags.HideAndDontSave;
-            configuration.normalZone = new ZoneDefinition(
-                ZoneType.Normal,
-                normalWheel,
-                false
-            );
-            configuration.safeZone = new ZoneDefinition(
-                ZoneType.Safe,
-                safeWheel,
-                true
-            );
-            configuration.superZone = new ZoneDefinition(
-                ZoneType.Super,
-                superWheel,
-                true
-            );
-
-            return configuration;
-        }
 
         public bool TryGetDefinition(
             int zoneNumber,

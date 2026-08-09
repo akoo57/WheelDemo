@@ -95,11 +95,10 @@ namespace WheelDemo.Wheel
 
             SpinStarted?.Invoke();
 
-            spinCoroutine =
-                StartCoroutine(SpinRoutine(selectedSliceIndex));
+            spinCoroutine = StartCoroutine(SpinRoutine(wheelData, selectedSliceIndex) );
         }
 
-        private IEnumerator SpinRoutine(int selectedSliceIndex)
+        private IEnumerator SpinRoutine(WheelData wheelData,int selectedSliceIndex)
         {
             isSpinning = true;
 
@@ -108,8 +107,7 @@ namespace WheelDemo.Wheel
                 spinButton.interactable = false;
             }
 
-            int sliceCount =
-                wheelView.CurrentWheelData.Slices.Count;
+            int sliceCount = wheelData.Slices.Count;
 
             float anglePerSlice = 360f / sliceCount;
 
@@ -161,8 +159,7 @@ namespace WheelDemo.Wheel
             wheelAnimator.localRotation =
                 Quaternion.Euler(0f, 0f, targetAngle);
 
-            WheelSliceData selectedSlice =
-                wheelView.CurrentWheelData.Slices[selectedSliceIndex];
+            WheelSliceData selectedSlice = wheelData.Slices[selectedSliceIndex];
 
             isSpinning = false;
             spinCoroutine = null;

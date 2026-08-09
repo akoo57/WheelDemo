@@ -399,7 +399,7 @@ MonoBehaviour:
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
+  m_Maskable: 0
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -621,7 +621,7 @@ MonoBehaviour:
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
+  m_Maskable: 0
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -1403,7 +1403,7 @@ MonoBehaviour:
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
+  m_Maskable: 0
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -3175,7 +3175,7 @@ MonoBehaviour:
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
+  m_Maskable: 0
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -3728,10 +3728,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   startingZone: 1
   reviveCost: 50
-  bronzeWheel: {fileID: 11400000, guid: 182c35b16cebf42ff857504c3717d11f, type: 2}
-  silverWheel: {fileID: 11400000, guid: 033e95517429249069c49080b1c2b1ed, type: 2}
-  goldenWheel: {fileID: 11400000, guid: bf2e3c14b93d34ae0a15c8d8920ee9ad, type: 2}
-  zoneConfiguration: {fileID: 0}
+  zoneConfiguration: {fileID: 11400000, guid: 402bfb11e3cf54f17983d44d86cdf3d0, type: 2}
   wheelView: {fileID: 1162354955}
   wheelSpinController: {fileID: 1162354956}
   zoneTitleText: {fileID: 1562351090}

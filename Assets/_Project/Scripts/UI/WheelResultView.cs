@@ -33,11 +33,11 @@ namespace WheelDemo.UI
 
             if (rewardAmountText != null)
             {
-                rewardAmountText.text = reward.IsBomb
+                rewardAmountText.text = reward.IsHazard
                     ? "BOMB!"
                     : string.Empty;
 
-                if (!reward.IsBomb)
+                if (!reward.IsHazard)
                 {
                     RewardVisualUtility.SetAmount(
                         rewardAmountText,
