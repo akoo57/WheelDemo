@@ -30,39 +30,20 @@ namespace WheelDemo.Data
         public int BaseAmount => baseAmount;
         public RewardBehavior Behavior => behavior;
         public bool SettlesToCurrency => rewardType == RewardType.Gold;
-        public bool ProducesAmount => behavior != null
-            ? behavior.ProducesAmount
-            : rewardType != RewardType.Bomb;
-        public bool IsHazard => behavior != null
-            ? behavior.IsHazard
-            : rewardType == RewardType.Bomb;
-
-        public bool IsBomb => IsHazard;
+        public bool ProducesAmount => behavior != null && behavior.ProducesAmount;
+        public bool IsHazard => behavior != null && behavior.IsHazard;
 
         public void Resolve(
             IRewardResolutionContext context,
             int amount
         )
         {
-            if (context == null)
+            if (context == null || behavior == null)
             {
                 return;
             }
 
-            if (behavior != null)
-            {
-                behavior.Resolve(context, this, amount);
-                return;
-            }
-
-            if (rewardType == RewardType.Bomb)
-            {
-                context.TriggerBomb();
-            }
-            else
-            {
-                context.GrantReward(this, amount);
-            }
+            behavior.Resolve(context, this, amount);
         }
     }
 }

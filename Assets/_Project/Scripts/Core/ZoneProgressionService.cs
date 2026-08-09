@@ -27,20 +27,6 @@ namespace WheelDemo.Core
             CurrentZone = 1;
         }
 
-        public bool TryGetCurrentZoneType(out ZoneType zoneType)
-        {
-            ZoneDefinition definition;
-
-            if (TryGetCurrentDefinition(out definition))
-            {
-                zoneType = definition.ZoneType;
-                return true;
-            }
-
-            zoneType = ZoneType.Normal;
-            return false;
-        }
-
         public bool TryGetCurrentDefinition(out ZoneDefinition definition)
         {
             definition = null;

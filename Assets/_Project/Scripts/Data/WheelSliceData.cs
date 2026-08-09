@@ -18,28 +18,18 @@ namespace WheelDemo.Data
 
         public int GetRewardAmount(int zoneNumber)
         {
-            if (reward == null || !reward.ProducesAmount)
+            if (reward == null || !reward.ProducesAmount || progressionConfiguration == null)
             {
                 return 0;
             }
 
             int safeZoneNumber = Mathf.Max(1, zoneNumber);
 
-            if (progressionConfiguration != null)
-            {
-                return progressionConfiguration.CalculateAmount(
-                    reward.BaseAmount,
-                    amountMultiplier,
-                    safeZoneNumber
-                );
-            }
-
-            int progressionMultiplier =
-                1 + (safeZoneNumber - 1) / 5;
-
-            return reward.BaseAmount *
-                amountMultiplier *
-                progressionMultiplier;
+            return progressionConfiguration.CalculateAmount(
+                reward.BaseAmount,
+                amountMultiplier,
+                safeZoneNumber
+            );
         }
     }
 }

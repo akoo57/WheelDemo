@@ -14,11 +14,6 @@ namespace WheelDemo.Core
         [SerializeField, Min(1)] private int startingZone = 1;
         [SerializeField, Min(0)] private int reviveCost = 50;
 
-        [Header("Wheel Data")]
-        [SerializeField] private WheelData bronzeWheel;
-        [SerializeField] private WheelData silverWheel;
-        [SerializeField] private WheelData goldenWheel;
-
         [Header("Zone Configuration")]
         [SerializeField] private ZoneConfiguration zoneConfiguration;
 
@@ -38,13 +33,11 @@ namespace WheelDemo.Core
         private GameFlowStateMachine stateMachine;
         private GameInteractionPolicy interactionPolicy;
         private ZoneProgressionService zoneProgressionService;
-        private ZoneConfiguration runtimeZoneConfiguration;
         private RunRewardService runRewardService;
         private IPlayerRewardInventory playerRewardInventory;
         private RewardSettlementService rewardSettlementService;
         private ReviveService reviveService;
         private RunFlowService runFlowService;
-        private CurrencyWallet runtimeCurrencyWallet;
 
         public int CurrentZone => zoneProgressionService != null
             ? zoneProgressionService.CurrentZone
@@ -52,42 +45,17 @@ namespace WheelDemo.Core
 
         private void Awake()
         {
-            ZoneConfiguration activeConfiguration = zoneConfiguration;
-
-            if (activeConfiguration == null)
-            {
-                runtimeZoneConfiguration =
-                    ZoneConfiguration.CreateRuntime(
-                        bronzeWheel,
-                        silverWheel,
-                        goldenWheel
-                    );
-
-                activeConfiguration = runtimeZoneConfiguration;
-            }
 
             stateMachine = new GameFlowStateMachine(
                 GameFlowState.ReadyToSpin
             );
             interactionPolicy = new GameInteractionPolicy(stateMachine);
             zoneProgressionService = new ZoneProgressionService(
-                activeConfiguration,
+                zoneConfiguration,
                 startingZone
             );
             runRewardService = new RunRewardService();
             playerRewardInventory = new PlayerRewardInventory();
-
-            if (currencyWallet == null)
-            {
-                GameObject walletObject = new GameObject(
-                    "RuntimeCurrencyWallet"
-                );
-
-                walletObject.hideFlags = HideFlags.HideAndDontSave;
-                runtimeCurrencyWallet =
-                    walletObject.AddComponent<CurrencyWallet>();
-                currencyWallet = runtimeCurrencyWallet;
-            }
 
             rewardSettlementService = new RewardSettlementService(
                 currencyWallet,
@@ -200,21 +168,6 @@ namespace WheelDemo.Core
 
             ApplyCurrentZone();
             RefreshRewardPanel();
-        }
-
-        private void OnDestroy()
-        {
-            if (runtimeZoneConfiguration != null)
-            {
-                Destroy(runtimeZoneConfiguration);
-                runtimeZoneConfiguration = null;
-            }
-
-            if (runtimeCurrencyWallet != null)
-            {
-                Destroy(runtimeCurrencyWallet.gameObject);
-                runtimeCurrencyWallet = null;
-            }
         }
 
         private void HandleSpinStarted()
@@ -444,13 +397,6 @@ namespace WheelDemo.Core
 
         private void HandleRestartRequested()
         {
-            if (stateMachine != null &&
-                stateMachine.CurrentState == GameFlowState.RunCollected)
-            {
-                HandleCollectedRestart();
-                return;
-            }
-
             RunRestartResult result =
                 runFlowService != null
                     ? runFlowService.TryRestart()
@@ -463,23 +409,6 @@ namespace WheelDemo.Core
 
             CompleteRestartPresentation(
                 "The run restarted from Zone 1."
-            );
-        }
-
-        private void HandleCollectedRestart()
-        {
-            RunRestartResult result =
-                runFlowService != null
-                    ? runFlowService.TryRestart()
-                    : RunRestartResult.InvalidState;
-
-            if (result != RunRestartResult.Success)
-            {
-                return;
-            }
-
-            CompleteRestartPresentation(
-                "The collected run restarted from Zone 1."
             );
         }
 

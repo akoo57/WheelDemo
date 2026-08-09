@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using WheelDemo.Data;
 
@@ -10,7 +9,6 @@ namespace WheelDemo.Rewards
         private readonly RewardCollection rewards =
             new RewardCollection();
 
-        public event Action InventoryChanged;
 
         public IEnumerable<RewardCollection.Entry> Entries =>
             rewards.Entries;
@@ -21,7 +19,6 @@ namespace WheelDemo.Rewards
         )
         {
             rewards.Add(reward, amount);
-            InventoryChanged?.Invoke();
         }
     }
 }

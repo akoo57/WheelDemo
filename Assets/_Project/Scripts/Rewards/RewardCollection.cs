@@ -32,7 +32,7 @@ namespace WheelDemo.Rewards
 
         public void Add(RewardData reward, int amount)
         {
-            if (reward == null || reward.IsBomb || amount <= 0)
+            if (reward == null || reward.IsHazard || amount <= 0)
             {
                 return;
             }

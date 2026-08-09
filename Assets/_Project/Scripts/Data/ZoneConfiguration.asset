@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b41b35dc90bb345e5a156dfd3e3cbffa, type: 3}
+  m_Name: ZoneConfiguration
+  m_EditorClassIdentifier: 
+  safeZoneInterval: 5
+  superZoneInterval: 30
+  normalZone:
+    zoneType: 0
+    wheelData: {fileID: 11400000, guid: 182c35b16cebf42ff857504c3717d11f, type: 2}
+    allowsCollection: 0
+  safeZone:
+    zoneType: 1
+    wheelData: {fileID: 11400000, guid: 033e95517429249069c49080b1c2b1ed, type: 2}
+    allowsCollection: 1
+  superZone:
+    zoneType: 2
+    wheelData: {fileID: 11400000, guid: bf2e3c14b93d34ae0a15c8d8920ee9ad, type: 2}
+    allowsCollection: 1
